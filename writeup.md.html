@@ -1,0 +1,274 @@
+<meta charset="utf-8" emacsmode="-*- markdown -*-">
+**6.08 Team 42 Final Project Report: Tempo**
+
+<b>Group Members:</b> Nancy Vargas, Maria Paula Barbosa, Ines Pinilla, Annie Bryan, Reginald Best
+
+Studies show that listening to music while running can decrease perceived exertion, improve performance, and even boost mood. While running, it’s important to stay at a constant pace so as to not exert too much energy and get tired, or run too slow and fall behind without realizing. This is why listening to music at a certain bpm can help runners stay on pace for a desired mile time.
+
+Tempo is a fitness device that retrieves a song from Spotify’s API matching the user’s running speed and music preferences and then plays that song to the user’s device. This not only helps the runner stay on ‘tempo’, but also allows them to explore new songs in the genres they choose that correspond to their speed.
+
+Overview
+===============================================================================
+
+## Video Demo
+<iframe width="560" height="315" src="https://www.youtube.com/embed/w7C_8jrciyQ" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+## System Diagram
+<iframe src="https://drive.google.com/file/d/1FtDRBkgYJtgDmzmlmPNW0VF0XWcmNB2s/preview" width="640" height="480"></iframe>
+
+## System Layout
+<iframe src="https://drive.google.com/file/d/1T6o5zawzvaRG3ZTkYDmAY-TxQT_SfoV_/preview" width="640" height="480"></iframe>
+
+## State Machine Diagrams
+Top Level: <iframe src="https://drive.google.com/file/d/1jcIGYG6IKggjffK-7pli7ENDz2rDlKc-/preview" width="640" height="480"></iframe>
+
+Free Run: <iframe src="https://drive.google.com/file/d/1gmZq1629Lqe5u0Q4KpCT-_Snkw1BA_91/preview" width="640" height="480"></iframe>
+
+Guided Run: <iframe src="https://drive.google.com/file/d/1EG85re2Yg4QS62EQ0RUHmdS8wd33d-Ee/preview" width="640" height="480"></iframe>
+
+## Parts List
+Heart Rate and Pulse Oximetry Monitor: MAXREFDES117#-ND <br>
+$16.32 x 5 = $81.60
+
+## Design Challenges
+* Access tokens in order to access Spotify’s API need to be refreshed every hour, which made testing tedious (we had to go to Spotify and manually refresh our token every hour) so in week 4 we automated this process with get_token.py, which refreshes a token at most once per hour.
+* Figuring out how to get the system to pause all its different timers and states when the pause button was clicked was another design challenge we experienced. We made this work using a pause boolean, pause timer, and pause buffer all of which updated every time the pause/play buttons were clicked.
+*Figuring out when to play the next song - we had to create a song timer (that paused along with the above specifications) and ask the API for the song duration in order to know when to ask for another song. This asking for the song in itself had issues because our algorithm for returning songs of the same bpm would often return an empty list if the user was walking or stopped (bpm < 50) so we needed to create a recursive strategy for returning matching songs, elaborated further below in play_song.py.
+*Asking for a song at the beginning of the run, before the user has started running gave us trouble as well because there were no songs found with a bpm = 0, so we needed to create a buffer of time where the SPM calculator could calibrate to the user’s strides and also create a default bpm = 150 so that in the case that the user started running too slowly, the get_song() function would not return a null/empty list.
+*The Heart Rate Sensor connection gave us a bit of trouble in connection, in particular the SDA and SCL pins which we initially had used the same ones as the IMU. Our IMU readings went crazy so we had to disconnect our GPS and connect the HR sensor through those pins instead of the IMU ones.
+
+## Tools Used
+
+<b>Hardware: </b> <br>
+ESP32 Dev Board <br>
+TFT Display <br>
+IMU Accelerometer <br>
+Heart Rate Monitor <br>
+
+<b>Software: </b> <br>
+Arduino, C++ <br>
+Python, requests, json, datetime <br>
+SQL, sqlite3 <br>
+HTML, Jinja <br>
+Git <br>
+
+Server-Side Functionality
+===============================================================================
+
+## Web User Interface
+The purpose of the UI is to properly connect a user with Tempo by authorizing their Spotify account with our product; on the other hand, the UI functions as the communication tool for the user to see their running statistics and song preferences, tailoring the user experience and optimizing the use of Tempo. There are multiple uses of the web user interface which are explored in the following sections. <br>
+
+## Signing Up for Tempo
+Through the Spotify API, we registered a non-commercial application. When a user wants to sign up for Tempo, they can navigate to the UI, the main file on the server. Upon clicking “Sign up for Tempo,” they are redirected to Spotify’s authorization page, which asks the user to login to their Spotify account and grant us access to their Spotify account. The primary purpose of requesting access is to modify the user’s playback state (play, pause, and skip songs); however, we configured the request to ask for all scopes of the Spotify API to give us maximum functionality of the user’s account. Spotify returns the user’s access and refresh tokens, which enable us to play songs to a user’s device. <br>
+
+When the user signs up on the UI, they input physical information (height, weight, age, sex) which are stored in the user’s database. This is so we can estimate running statistics such as calories burned or distance traveled. We do this in order to create a better user experience in making an overall running/fitness product. <br>
+
+## Storing and Displaying Run Statistics
+After the user signs in with their Tempo username, the UI provides the user to see their running stats. When the user has first signed up for Tempo, there is a page which tells the user that we don’t have any runs for them, and it prompts the user to enter any runs manually by providing us with the duration, type of run, steps per minute, and total steps of the run. We store this information into a database existing on our team server. Every time the user runs with Tempo, these run statistics are sent from the ESP32 to the server and stored in the database. Also, the ESP32 can send heart rate data with this part attached. <br>
+
+On the UI, we created a page which shows the following information from their most recent runs: date/time, duration, average steps per minute, distance, total steps, calories burned, and average heart rate. The only new part here is the calories burned is a fitness statistic which we calculate server side using the user’s biological information. This information is stored in the database to display on the UI. We use the database to display these stats. Also, the page displays the users all time running stats broken into three categories: all runs, guided runs, and free runs. The option to manually enter a run is still available as well. <br>
+
+## Storing and Displaying Song Preferences
+Along with running stats, the UI shares song stats. At first, the user is prompted to enter a favorite genre of music and/or artist to generate a playlist of songs to choose from on their runs. When the user accesses this page, at the top, their top five artists and top five songs are displayed based on the number of listens. Also, the user can see all the songs in their custom playlist in alphabetical order. There is a prompt for the user to enter their favorite genre of music or artists which generates the playlists when the user first signs up, and it adds to their current playlists when the user has already used Tempo. <br>
+
+
+ESP-Side Functionality
+===============================================================================
+
+## LCD User Interface
+The LCD interface was created to be used in conjunction with the web UI, allowing the user to select run-specific details. Once the user makes a Tempo account on the web UI, they can then use the interface to login to their accounts, select what genres/artists to base their playlists off of, what type of run they would like to go on, and then once chosen, shows them the instantaneous run details such as time elapsed, strides per minute, current song playing, as well as all of the actions they can take: pause, play, skip, end run.
+
+## Song Feedback
+The song feedback tool in the free run allows users to like and dislike songs that are played in order to tailor their playlists to their specific preferences. When the user selects the genres and/or artists they would like their music to be based on, we create a custom playlist for them using Spotify’s API which includes a range of songs corresponding to their specifications - as well as any songs from previous runs they have liked. The song feedback feature allows the user to ensure songs are played again (like) or removed from their song database (dislike).
+
+## Free Runs
+The free run is the most basic run a user can go on. Once they press “start”, a song corresponding to their current strides-per-minute(SPM) will play on whatever device currently controls Spotify playback. The LCD also updates in real time showing the duration of the run, current song, SPM, and heart rate(BPM) (if a user’s finger is detected on the sensor). In addition, the user can pause or resume playback, skip to a new song, like or dislike the current song, or end the run.
+
+## Guided Runs
+The guided run uses the same base as the free run, aside from not having song feedback functionality (like/dislike). It builds on the free run features by guiding the user through a workout, with messages appearing on the screen telling the user what intervals to run for i.e. “5:00 ON” or “1:00 OFF”. The user can choose what maximum length they want the workout to be in the choose_duration screen, and then the workout intervals are tailored to that selection. In conjunction with the workout messages, there is also a run feedback message which tells the user to run faster or slower depending on the average spm of the song.
+
+## Storing Run Data
+At the end of every run there is a call made to send_data() which sends the time elapsed, average heart rate, average spm, and number of steps to a python script - save_run.py - to be saved in the server database. The server side code that takes care of this also calculates a couple of other data points from this including calories burned, run speed, etc. After sending all of the necessary data, we clear out all the buffers and counters used so that there are no errors when the user tries to go for another run.
+
+
+Arduino Files
+===============================================================================
+
+## main.ino
+This is the main Arduino script and contains the overarching state machine that controls all of the actions you can take on the ESP. There are 10 total states:
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+#define INTRO 0
+#define INPUT_USERNAME 1
+#define CHOOSE_MUSIC 2
+#define CHOOSE_ARTIST 3
+#define CHOOSE_GENRE 4
+#define CHOOSE_RUN 5
+#define START_RUN 6
+#define FREE_RUN 7
+#define CHOOSE_DURATION 8
+#define GUIDED_RUN 9
+#define END_RUN 10
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+They range from selecting music, duration, type of run, and of course the free and guided run screens. The main file also contains all of our global variables and request buffers, used in every file.
+
+## setup_functions.ino
+The setup functions have to do with everything we needed to initialize in the setup() function at the beginning of the main.ino code. This file was created towards the end of our project in order to make the code easier to navigate and read. Everything from setting up the wifi, TFT, IMU, and heart rate sensor is in this file.
+
+## support_functions.ino
+The support functions are made up of everything that wasn’t either a drawing function or setup function. It contains all of the request creating functions as well as the do_http_request function which sends requests either to the Spotify API or 6.08 server where our python files are located. Also contains most of the math - calculating spm, steps, heart rate, timers, workouts, and more.
+
+## drawing_functions.ino
+The drawing functions all display images or text of some kind on the LCD. There are screen setup functions, which are used once and just draw the main screen details of each state. Then there are the display timers, spm, HR, and other feedback functions which are continuously used and updated. We decided to put all of these display functions in a file of their own in order to simplify our support function file and make it easier to see what each function was doing.
+
+## Button class
+The button class was created so that we could have more functionality, and it differentiates short presses from long ones so that we could have 4 actions available instead of just 2. Because buttons are used so much in our LCD interface, the button class allowed us to heavily simplify the main code. It accounts for debounce time and counts when the button was pressed and unpressed so that the ‘flag’ it sends is accurate and simple. We check the buttons every loop, and they can have a response of either 0 - no press, 1 - short press, or 2 - long press.
+
+## ChoosingRectangle class
+The choosingRectangle class was created to control how scrolling was displayed on the LCD. It can be generalized to scrolling through any number of vertical options on the TFT. This is because its constructor takes in a lambda function for the y-coordinates:
+~~~~~~~~~~~~
+ChoosingRectangle(TFT_eSPI mainTFT, int startX, int (*yFunction)(int), int rectangleWidth, int rectangleHeight)
+~~~~~~~~~~~~
+Its main method `update` takes in button input, and updates the screen accordingly. For example, if a button press is detected, the rectangle moves to the next option.
+
+## TextInputter class
+In order to allow the user to input both their username and potentially their favorite artists, we drew from the state machine from the Wikipedia UI in Ex05. The resulting class generates a response string as the user scrolls and selects alphanumeric characters by tilting the ESP and pressing Button1 (short press) respectively. It has a more obtuse title angle to make the system less sensitive and has updated state transitions for when a user is done inputting a response. It also has a `clearMessage()` method so the instance can be reused.
+
+Python Files
+===============================================================================
+The Python files provide several purposes: ui.py is where the user can navigate in order to interact with their run statistics and songs stored in their playlist. Many of the other Python files handle the requests to the Spotify API, while others access, modify, and add to the databases of runs, songs, and user tokens.
+
+## ui.py
+This is the main Python script on the server that handles all of the web user interface. Depending on the parameters that are provided to the script, it will return one of the 7 html pages, formatted with the Python module Jinja to display the information unique to the user.
+
+## build_custom_playlist.py
+This is the Python script that is called by the ESP32 or by the web app when a user inputs their favorite genres or artists to create a brand new playlist. It requires a username and at least one value for either genres or artists. Multiple genres or artists can be supplied as comma-separated values. <br>
+
+The script makes a GET request to the Spotify API for each artist or genre that is specified. The request asks Spotify for 50 recommended tracks based on the “seed” that we give it: either an artist ID seed or genre seed. Spotify then returns a JSON dictionary that the Python script parses, and adds each track to the user’s playlist of songs if it doesn’t already appear in it.
+
+## feedback.py
+This is the Python script that is called by the ESP32 or by the web app when a user gives positive or negative feedback about a song or an artist. It requires values for the parameters username, feedback, and song_title. <br>
+
+If the user “likes” a song, a feedback value of 1 is stored in the row for that user and song, and if the user “dislikes” a song, a feedback value of -1 is stores. Additionally, on the web app, the user can choose to “remove” an entire artist from their playlist. When this happens, any row containing that artist receives a feedback value of -1. Rather than removing a disliked song or artist from the database, it receives a feedback value of -1 to prevent it from being added again in the future. Only songs with feedback values of 0 or +1 are considered while running.
+
+## get_token.py
+This Python script is called by many of the other Python scripts, any time that they need a token to access or control a user’s Spotify account. This file only requires a value for the username. <br>
+
+The file searches the database user_tokens.db for the most recent time at which they updated their access token. If it was less than an hour ago, the current access token is returned. If the access token was last refreshed over an hour ago, we make a POST request to the Spotify API containing the access_token and refresh_token in the body, and obtain a new access_token. We update the time and access_token values in the database and return the new access token.
+``` python
+payload = {'grant_type': 'refresh_token', 'refresh_token': refresh_token, 'client_id': '8cd2fe5bf6e7448fb9073df5adb9d77d', 'client_secret': '25bbd491755744ba99b5cefcc4f785e6'}
+r = requests.post('https://accounts.spotify.com/api/token', data=payload)
+data = json.loads(r.content)
+new_access_token = data["access_token"]
+c.execute("""UPDATE tokens SET access_token = ? WHERE username = ?;""",(new_access_token, username))
+c.execute("""UPDATE tokens SET timing = ? WHERE username = ?;""",(datetime.datetime.now(), username))
+```
+
+## play_song.py
+This Python script is called by the ESP32 while the user is on a free run. It requires values for the parameters username and bpm. <br>
+
+The file is called whenever a song ends and Tempo needs to find a new song to play, or whenever the user manually skips a song. The file takes in values for the username and desired song BPM (the SPM at which the user is currently running). The file calls get_token.py and receives a token for the user, then accesses the database of songs, user_data.db. It searches for a song within a narrow threshold of the bpm, specifically bpm-0.5 to bpm+0.5. If there is no song within that range, the interval widens until it gets a non-empty list of songs, then returns a random item of that list. This is done via the following python function:
+``` python
+def get_song(bpm, username, HEADERS, c, threshold=0.5):
+matching_songs = c.execute("""SELECT * FROM songs WHERE username = ? AND bpm > ? AND bpm < ? AND feedback >= 0 ORDER BY bpm ASC;""", (username, bpm - threshold, bpm + threshold)).fetchall()
+
+if len(matching_songs) == 0:
+return get_song(bpm, username, HEADERS, c, threshold + 0.5)
+
+song = random.choice(matching_songs)
+return song
+```
+
+## pause_song.py
+Similar to play_song.py, this Python script is called by the ESP32 while the user is on a run. It requires values for the parameters username and key. <br>
+
+The button interface on the device allows the user to pause their song. When they do this, the pause_song.py script is called and provided the username and a keyword (either “play” or “pause”). Calling pause_song.py with the keyword “play” is different from calling play_song.py, because play_song.py obtains a brand new song with a given bpm, and calling pause_song.py with the keyword “play” simply un-pauses the currently paused song.
+
+## save_run.py
+This Python script is called by the ESP32 after a run has been completed, or by the web app when a run is manually inputted. It requires values for the parameters username, duration, type, avg_bpm, steps, and hr. <br>
+
+The file adds these values and the approximated calories and distance as a new row to the run_history.db database.
+
+HTML Files
+===============================================================================
+The HTML files provide the front-end and the visuals for the user to and interact with their run statistics and songs stored in their playlist.
+
+## main_page.html
+This is the html page that is returned when the user navigates to the [main link](http://608dev-2.net/sandbox/sc/team042/tempo/app/ui.py). It contains a button to sign up for a new Tempo account and a space to type their username to sign in if they already have an account.
+
+## create_account.html
+This is the html page that is returned when the user first signs up with Tempo. It contains a form for the user to input a username along with their height, weight, sex, and age (which are stored and used to approximate distance ran and calories burned).
+
+## init_page.html
+This is the html page that is returned when the user logs in
+[here](http://608dev-2.net/sandbox/sc/team042/tempo/app/ui.py?username=test). It has 2 buttons, one directs the user to a page with their run statistics, the other directs the user to a page with their stored songs.
+
+## init_runs.html
+This is the html page that is returned when the user logs in and navigates to view their runs, but `c.execute("""SELECT * FROM runs WHERE username = ?;""", (username,)).fetchall()` returns an empty list, meaning that they don’t have any runs stored in the database. <br>
+
+At the bottom of the page there is a form where the user can manually log any runs they may have completed on their own.
+
+## runs.html
+This is the html page that is returned when the user logs in and navigates to view their runs and they have at least one run stored in the database. <br>
+
+At the top of the page there is a form with a drop-down for the user to select how to order their runs (most to least recent, by distance, or by time) as well as a button for which runs they want to view (free runs only, guided runs only, or all runs). <br>
+
+In the middle of the page, the runs are displayed in the specified order (the default value is to show all runs, ordered most to least recent, which is what is displayed when the user first navigates to the page). <br>
+
+Just below this, the all-time run stats are displayed. This includes the total number of runs that have been completed, the number of minutes/miles ran, and the number of calories burned for each of free runs, guided runs, and overall. <br>
+
+At the bottom of the page there is a form where the user can manually log any runs they may have completed on their own.
+
+## init_songs.html
+This is the html page that is returned when the user logs in and navigates to view their songs, but `c.execute("""SELECT song_title, artist_name, bpm, num_times_played FROM songs WHERE username = ? AND feedback >= 0 ORDER BY artist_name ASC, song_title ASC;""", (username,)).fetchall()` returns an empty list, meaning that they don’t have any songs in their playlist. <br>
+
+At the bottom of the page there is a form where the user can manually select genres or input artist names to add to their music preferences.
+
+## songs.html
+This is the html page that is returned when the user logs in and navigates to view their songs and they have at least one song stored in their playlist. <br>
+
+At the top of the page, the user’s all-time song stats are displayed. This includes up to 5 of the user’s top artists (artist name and number of times listened) and up to 5 of the user’s top songs (song title and number of times listened). <br>
+
+Below this, all of the songs on the user’s playlist (that they have not previously disliked or removed) appear in alphabetical order by artist. Songs with the same artist appear in alphabetical order by song title. This display has columns displaying song title, artist name, BPM, and number of times listened. <br>
+
+At the bottom of the page there is a form where the user can manually select genres or input artist names to add to their music preferences. There is also an option to manually remove individual songs or all songs by any artist that appears on their playlist.
+
+Database Files
+===============================================================================
+The SQL database files store information for the user, such as their run history, the list of songs in their playlist, the feedback users have provided for certain artists or songs, the user’s physical data to estimate distance and calories of a run, and the unique access and refresh token associated with their Spotify account which are needed in order to play songs to their device.
+
+## user_data.db
+This database stores the user’s playlist of songs that are selected from during a free run. There is one row per song per user (the same song may appear multiple times on the database, but only once per user). <br>
+
+The columns for this database are: username, song_id, song_title, artist_name, bpm, duration (ms), feedback, and num_times_played. <br>
+
+This database is updated every time the user listens to a song on a run (num_times_played is incremented), every time the user likes or dislikes a song on their run or on the web app (feedback is changed), and the database grows every time the user inputs their favorite genres or artists, either before a run or on the web app.
+
+## run_history.db
+This database stores the run history for all users. There is one row per run completed per user. <br>
+
+The columns for this database are: username, date, duration (s), duration_display, type_of_run, avg_bpm, distance, steps, calories, and heart_rate. <br>
+
+This database is updated after a run, either from the ESP32 or manually by the user on the web app. The ESP32 only has to provide username, duration, type_of_run, avg_bpm, steps, and heart_rate. The number of calories burned and distance traveled are calculated using the following approximation, given that the values height, weight, sex, and age are provided by the user when they sign up for tempo on the web app:
+``` python
+stride_length = height/24
+steps_per_mile = 5280/(stride_length)
+distance = steps / steps_per_mile
+
+# bmr = basic metabolic rate
+if sex == "male": bmr = 6.07676 * weight + 12.18946 * height - 5.677 * age + 88.362
+else: bmr = 4.19436 * weight + 7.86892 * height - 4.330 * age + 447.593
+
+run_speed = 3600*distance/duration # units miles per hour
+mets = 1.5*run_speed # rough approximation of metabolic rate
+calories = bmr * mets / 24 * duration / 3600
+```
+
+## user_tokens.db
+This database stores the usernames of all users that have signed up for Tempo, as well as their unique access and refresh tokens, and their personal data to approximate calories and distance for a run. There is exactly one row per user. <br>
+
+The columns for this database are: username, timing, access_token, refresh_token, height, weight, sex, and age. The timing column stores the most recent time when an access token was obtained (since they expire every 60 minutes, we only update if the last access token was obtained more than 60 minutes ago). <br>
+
+The values for username, height, weight, sex, and age are all provided by the user when they sign up. The access_token and refresh_token values are first obtained when the user signs up for tempo and grants the Spotify API access to their account (for example, permission to modify their playback state) and the access_token is refreshed at most once an hour. When the access_token is refreshed, the user’s row in the database is updated to contain the new access_token and the time at which it is obtained.
+
+<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
+
