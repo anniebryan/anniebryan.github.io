@@ -112,6 +112,10 @@ input, select, textarea {
 			transition: none !important;
 		}
 
+	.justify {
+		text-align: justify;
+	}
+
 /* Type */
 
 	body, input, select, textarea {
