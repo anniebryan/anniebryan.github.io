@@ -3952,6 +3952,10 @@ input, select, textarea {
     font-size: 0.6em !important;
   }
 
+  .height-30 {
+    height: 30px;
+  }
+
   .hide-mobile {
     display: none;
   }
