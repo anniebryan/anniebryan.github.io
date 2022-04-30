@@ -3951,10 +3951,22 @@ input, select, textarea {
   a.button {
     font-size: 0.6em !important;
   }
+
+  .hide-mobile {
+    display: none;
+  }
 }
 
 @media(min-width: 767px) {
   .height-150 {
     height: 150px;
   }
+
+  .show-mobile {
+    display: none;
+  }
+}
+
+.margin-bottom-16 {
+  margin-bottom: 16px;
 }
