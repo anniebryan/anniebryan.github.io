@@ -3952,3 +3952,9 @@ input, select, textarea {
     font-size: 0.6em !important;
   }
 }
+
+@media(min-width: 767px) {
+  .height-150 {
+    height: 150px;
+  }
+}
