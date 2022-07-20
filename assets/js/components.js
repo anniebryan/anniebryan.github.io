@@ -1,6 +1,5 @@
 class Header extends HTMLElement {
   connectedCallback() {
-    console.log("test");
     this.innerHTML = `
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark mdg-nav">
         <div class="container">
@@ -38,6 +37,36 @@ class Header extends HTMLElement {
   }
 }
 
+class Jumbotron extends HTMLElement {
+  connectedCallback() {
+    const shadow = this.attachShadow({mode: 'open'});
+
+    const div = document.createElement('div');
+    div.setAttribute('class', 'jumbotron');
+
+    const container = document.createElement('div');
+    container.setAttribute('class', 'container');
+
+    const h = document.createElement('h1');
+    h.setAttribute('class', 'no-anchor');
+    h.innerHTML = this.getAttribute("title");
+
+    const p = document.createElement('p');
+    p.innerHTML = this.getAttribute("description");
+
+    container.appendChild(h);
+    container.appendChild(p);
+    div.appendChild(container);
+    shadow.appendChild(div);
+
+    const style = document.createElement('link');
+    style.setAttribute('rel', 'stylesheet');
+    style.setAttribute('href', "https://d33wubrfki0l68.cloudfront.net/bundles/257fcefa15c80677a39e88c7592ab770b9744ccb.css");
+
+    shadow.appendChild(style);
+  }
+}
+
 class Tutoring extends HTMLElement {
   connectedCallback() {
     this.innerHTML = `
@@ -65,4 +94,5 @@ class Tutoring extends HTMLElement {
 }
 
 customElements.define('header-component', Header);
+customElements.define('jumbotron-component', Jumbotron);
 customElements.define('tutoring-component', Tutoring);
