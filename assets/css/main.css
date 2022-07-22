@@ -3962,10 +3962,6 @@ input, select, textarea {
 }
 
 @media(min-width: 767px) {
-  .height-150 {
-    height: 150px;
-  }
-
   .show-mobile {
     display: none;
   }
@@ -3973,4 +3969,28 @@ input, select, textarea {
 
 .margin-bottom-16 {
   margin-bottom: 16px;
+}
+
+
+.img-container {
+  width: 350px;
+  display: flex;
+  align-items: center;
+}
+
+.img-container img {
+  max-height: 100%;
+  max-width: 100%;
+}
+
+@media(min-width: 2300px) {
+  .img-container {
+	height: 250px;
+  }
+}
+
+@media(max-width: 2299px) {
+  .img-container {
+	max-height: 150px;
+  }
 }
