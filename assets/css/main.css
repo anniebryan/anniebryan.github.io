@@ -3978,6 +3978,10 @@ a.button {
   .show-lg {
 	display: none;
   }
+
+  .img-container {
+	height: 150px;
+  }
 }
 
 @media(min-width: 992px) {
@@ -4024,4 +4028,8 @@ a.button {
 .img-container img {
   max-height: 100%;
   max-width: 100%;
+}
+
+.margin-top-10 {
+  margin-top: 10px;
 }
