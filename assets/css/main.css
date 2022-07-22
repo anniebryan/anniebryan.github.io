@@ -3979,11 +3979,19 @@ a.button {
   .show-xxl {
 	display: none;
   }
+
+  .img-container {
+	max-height: 150px;
+  }
 }
 
 @media(min-width: 2300px) {
   .hide-xxl {
 	display: none;
+  }
+
+  .img-container {
+	height: 250px;
   }
 }
 
@@ -4005,16 +4013,4 @@ a.button {
 .img-container img {
   max-height: 100%;
   max-width: 100%;
-}
-
-@media(min-width: 2300px) {
-  .img-container {
-	height: 250px;
-  }
-}
-
-@media(max-width: 2299px) {
-  .img-container {
-	max-height: 150px;
-  }
 }
