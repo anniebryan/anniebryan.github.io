@@ -3982,6 +3982,14 @@ a.button {
   .img-container {
 	height: 150px;
   }
+
+  .padding-top-mobile {
+	padding-top: 5.5%;
+  }
+
+  .padding-bottom-mobile {
+	padding-bottom: 5.5%;
+  }
 }
 
 @media(min-width: 992px) {
