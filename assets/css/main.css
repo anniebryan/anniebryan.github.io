@@ -3947,24 +3947,48 @@ input, select, textarea {
 	margin-left: 0px;
 }
 
-@media(max-width: 767px) {
-  a.button {
-    font-size: 0.6em !important;
-  }
+a.button {
+  font-size: 0.6em !important;
+}
 
-  .height-30 {
-    height: 30px;
-  }
-
+@media(max-width: 735px) {
   .hide-mobile {
-    display: none;
+	display: none;
   }
 }
 
-@media(min-width: 767px) {
+@media(min-width: 736px) {
   .show-mobile {
-    display: none;
+	display: none;
   }
+}
+
+@media(max-width: 991px) {
+  .show-lg {
+	display: none;
+  }
+}
+
+@media(min-width: 992px) {
+  .hide-lg {
+	display: none;
+  }
+}
+
+@media(max-width: 2299px) {
+  .show-xxl {
+	display: none;
+  }
+}
+
+@media(min-width: 2300px) {
+  .hide-xxl {
+	display: none;
+  }
+}
+
+.height-30 {
+  height: 30px;
 }
 
 .margin-bottom-16 {
