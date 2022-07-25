@@ -4034,8 +4034,9 @@ a.button {
 }
 
 .img-container img {
-  max-height: 100%;
+  max-height: 150px;
   max-width: 100%;
+  margin: auto;
 }
 
 .margin-top-10 {
